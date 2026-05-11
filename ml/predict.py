@@ -1,58 +1,60 @@
-import pandas as pd
+# ml/predict.py
+
+from strategy.indicators import indicators
 
 
 def generate_ml_signals(model, df):
 
     # =========================
-    # FEATURE COLUMNS
+    # ADD INDICATORS
     # =========================
 
-    feature_columns = [
+    df = indicators(df)
+
+    # =========================
+    # FEATURES
+    # =========================
+
+    features = df[[
         "SMA20",
         "SMA50",
         "RSI",
         "MACD",
         "MACD_SIGNAL"
-    ]
+    ]]
 
     # =========================
-    # PREPARE FEATURES
-    # =========================
-
-    features = df[feature_columns].copy()
-
-    features.dropna(inplace=True)
-
-    # =========================
-    # MODEL PREDICTIONS
+    # PREDICT
     # =========================
 
     predictions = model.predict(features)
 
     # =========================
-    # CONVERT TO SIGNALS
+    # CREATE SIGNALS
     # =========================
 
     signals = []
 
     for pred in predictions:
 
-        # BUY SIGNAL
         if pred == 1:
-
             signals.append(1)
 
-        # SELL SIGNAL
         else:
-
             signals.append(-1)
 
+    df["Signals"] = signals
+
     # =========================
-    # ALIGN DATAFRAME
+    # PREVENT LOOKAHEAD BIAS
     # =========================
 
-    result_df = df.iloc[-len(signals):].copy()
+    df["Signals"] = df["Signals"].shift(1)
 
-    result_df["Signals"] = signals
+    # =========================
+    # REMOVE NAN
+    # =========================
 
-    return result_df
+    df.dropna(inplace=True)
+
+    return df

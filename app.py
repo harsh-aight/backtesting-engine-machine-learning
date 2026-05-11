@@ -1,28 +1,29 @@
+# app.py
+
 from strategy.indicators import indicators
 from strategy.signals import generate_sginals
+
+from backtester.engine import Backtester
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from utils.metrics import calculate_metrics
 
 from ml.prepare_data import prepare_ml_data
 from ml.train_model import train_ml_model
 from ml.predict import generate_ml_signals
 
-from backtester.engine import Backtester
-
-from utils.metrics import calculate_metrics
-
-import pandas as pd
-import matplotlib.pyplot as plt
-
 
 # =========================
-# USER CONFIG
+# CONFIG
 # =========================
 
-USE_ML = False
+USE_ML = True
 
 initial_balance = 10000
 
 start_date = "2023-02-15"
-
 end_date = "2023-03-05"
 
 
@@ -35,55 +36,40 @@ df = pd.read_csv(
     parse_dates=["Timestamp"]
 )
 
-
-# =========================
-# ENSURE TIMESTAMP FORMAT
-# =========================
-
 df["Timestamp"] = pd.to_datetime(
     df["Timestamp"],
     utc=True
 )
 
-
-# =========================
-# SORT DATA
-# =========================
-
-df.sort_values(
-    "Timestamp",
-    inplace=True
-)
+df.sort_values("Timestamp", inplace=True)
 
 
 # =========================
-# ML MODEL TRAINING
+# PREPARE ML DATA
 # =========================
 
 X, y, ml_df = prepare_ml_data(df)
 
-model, predictions, y_test = train_ml_model(X, y)
+
+# =========================
+# TRAIN MODEL
+# =========================
+
+model, X_test, y_test = train_ml_model(X, y)
 
 
 # =========================
 # FILTER DATE RANGE
 # =========================
 
-filtered_df = df[
-    (df["Timestamp"] >= start_date) &
-    (df["Timestamp"] <= end_date)
+filtered_df = ml_df[
+    (ml_df["Timestamp"] >= start_date) &
+    (ml_df["Timestamp"] <= end_date)
 ].copy()
 
 
 # =========================
-# CALCULATE INDICATORS
-# =========================
-
-result = indicators(filtered_df)
-
-
-# =========================
-# SIGNAL GENERATION
+# STRATEGY SELECTION
 # =========================
 
 if USE_ML:
@@ -91,19 +77,21 @@ if USE_ML:
     print("\nUSING ML STRATEGY\n")
 
     result = generate_ml_signals(
-        model,
-        result
+        model=model,
+        df=filtered_df
     )
 
 else:
 
     print("\nUSING RULE-BASED STRATEGY\n")
 
+    result = indicators(filtered_df)
+
     result = generate_sginals(result)
 
 
 # =========================
-# PREVIEW SIGNALS
+# SHOW DATA
 # =========================
 
 print(result[[
@@ -145,7 +133,7 @@ for trade in backtest_results["trade_history"][:10]:
 
 
 # =========================
-# CALCULATE METRICS
+# METRICS
 # =========================
 
 metrics = calculate_metrics(
@@ -170,16 +158,11 @@ plt.plot(
 )
 
 if USE_ML:
-
     plt.title("ML Strategy Equity Curve")
-
 else:
-
     plt.title("Rule-Based Strategy Equity Curve")
 
-
 plt.xlabel("Trades")
-
 plt.ylabel("Portfolio Value")
 
 plt.grid()
