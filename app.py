@@ -15,10 +15,6 @@ from ml.train_model import train_ml_model
 from ml.predict import generate_ml_signals
 
 
-# =========================
-# CONFIG
-# =========================
-
 USE_ML = True
 
 initial_balance = 10000
@@ -27,9 +23,7 @@ start_date = "2023-02-15"
 end_date = "2023-03-05"
 
 
-# =========================
-# LOAD DATA
-# =========================
+
 
 df = pd.read_csv(
     "data/BTCUSDT_1h.csv",
@@ -44,23 +38,17 @@ df["Timestamp"] = pd.to_datetime(
 df.sort_values("Timestamp", inplace=True)
 
 
-# =========================
-# PREPARE ML DATA
-# =========================
+
 
 X, y, ml_df = prepare_ml_data(df)
 
 
-# =========================
-# TRAIN MODEL
-# =========================
+
 
 model, X_test, y_test = train_ml_model(X, y)
 
 
-# =========================
-# FILTER DATE RANGE
-# =========================
+
 
 filtered_df = ml_df[
     (ml_df["Timestamp"] >= start_date) &
@@ -68,9 +56,7 @@ filtered_df = ml_df[
 ].copy()
 
 
-# =========================
-# STRATEGY SELECTION
-# =========================
+
 
 if USE_ML:
 
@@ -90,9 +76,7 @@ else:
     result = generate_sginals(result)
 
 
-# =========================
-# SHOW DATA
-# =========================
+
 
 print(result[[
     "Timestamp",
@@ -104,9 +88,7 @@ print(result[[
 ]].tail(20))
 
 
-# =========================
-# RUN BACKTEST
-# =========================
+
 
 backtester = Backtester(
     result,
@@ -116,9 +98,7 @@ backtester = Backtester(
 backtest_results = backtester.run()
 
 
-# =========================
-# OUTPUT RESULTS
-# =========================
+
 
 print("\nFinal Portfolio Value:")
 
@@ -132,9 +112,7 @@ for trade in backtest_results["trade_history"][:10]:
     print(trade)
 
 
-# =========================
-# METRICS
-# =========================
+
 
 metrics = calculate_metrics(
     backtester.initial_balance,
@@ -147,9 +125,7 @@ print("\nMetrics : ")
 print(metrics)
 
 
-# =========================
-# EQUITY CURVE
-# =========================
+
 
 plt.figure(figsize=(15, 6))
 
